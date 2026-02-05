@@ -187,6 +187,12 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 - **Email**: admin@pointatlas.com
 - **Password**: Admin@123456
 
+> ⚠️ **SECURITY WARNING**: The default admin password and JWT secret in `appsettings.json` are for **development only**. For production:
+> 1. Change the admin password immediately after first login
+> 2. Set a strong JWT secret via environment variables
+> 3. Use strong database passwords
+> 4. Never commit `.env` files with real credentials
+
 ## Environment Variables
 
 ```env
