@@ -128,7 +128,8 @@ PointAtlas/
 
 1. **Clone the repository**
 ```bash
-cd /home/inwalk/dev/ext/PointAtlas
+git clone <repository-url>
+cd PointAtlas
 ```
 
 2. **Create environment file**

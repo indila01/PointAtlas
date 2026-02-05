@@ -129,7 +129,7 @@ HOW TO RUN THE PROJECT
 
 OPTION 1: Run Everything with Docker
 =====================================
-cd /home/inwalk/dev/ext/PointAtlas
+cd PointAtlas
 
 # Start all services
 docker compose up -d
