@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointAtlas.Core", "PointAtl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointAtlas.Infrastructure", "PointAtlas.Infrastructure\PointAtlas.Infrastructure.csproj", "{4EFDCBD6-B248-4078-A4CB-9CF7C11D5F9A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointAtlas.Application.Tests", "PointAtlas.Application.Tests\PointAtlas.Application.Tests.csproj", "{864E0450-9DC3-4766-B8D0-956C619DE842}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PointAtlas.API.Tests", "PointAtlas.API.Tests\PointAtlas.API.Tests.csproj", "{A7DD1346-C7EC-40FC-964D-FF1DAC480676}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{4EFDCBD6-B248-4078-A4CB-9CF7C11D5F9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4EFDCBD6-B248-4078-A4CB-9CF7C11D5F9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4EFDCBD6-B248-4078-A4CB-9CF7C11D5F9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{864E0450-9DC3-4766-B8D0-956C619DE842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{864E0450-9DC3-4766-B8D0-956C619DE842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{864E0450-9DC3-4766-B8D0-956C619DE842}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{864E0450-9DC3-4766-B8D0-956C619DE842}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7DD1346-C7EC-40FC-964D-FF1DAC480676}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7DD1346-C7EC-40FC-964D-FF1DAC480676}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7DD1346-C7EC-40FC-964D-FF1DAC480676}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7DD1346-C7EC-40FC-964D-FF1DAC480676}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
