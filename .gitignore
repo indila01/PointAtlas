@@ -29,6 +29,8 @@ artifacts/
 # EF Core Migrations (keep only checked-in migrations)
 **/Migrations/*_*.cs
 !**/Migrations/*_InitialCreate.cs
+!**/Migrations/*_InitialCreate.Designer.cs
+!**/Migrations/PointAtlasDbContextModelSnapshot.cs
 
 # Rider
 .idea/
