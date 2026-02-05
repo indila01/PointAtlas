@@ -1,5 +1,6 @@
 using AutoMapper;
 using NetTopologySuite.Geometries;
+using PointAtlas.Application.Common;
 using PointAtlas.Application.DTOs;
 using PointAtlas.Application.Services.Interfaces;
 using PointAtlas.Core.Entities;
@@ -23,7 +24,7 @@ public class MarkerService : IMarkerService
         _currentUserService = currentUserService;
     }
 
-    public async Task<PagedResultDto<MarkerDto>> GetMarkersAsync(MarkerFilterDto filters)
+    public async Task<Result<PagedResultDto<MarkerDto>>> GetMarkersAsync(MarkerFilterDto filters)
     {
         IEnumerable<Marker> markers;
 
@@ -69,26 +70,29 @@ public class MarkerService : IMarkerService
         var markerDtos = _mapper.Map<List<MarkerDto>>(pagedMarkers);
         var totalPages = (int)Math.Ceiling(totalCount / (double)filters.PageSize);
 
-        return new PagedResultDto<MarkerDto>(
+        var result = new PagedResultDto<MarkerDto>(
             markerDtos,
             totalCount,
             filters.Page,
             filters.PageSize,
             totalPages);
+
+        return Result<PagedResultDto<MarkerDto>>.Success(result);
     }
 
-    public async Task<MarkerDto> GetMarkerByIdAsync(Guid id)
+    public async Task<Result<MarkerDto>> GetMarkerByIdAsync(Guid id)
     {
         var marker = await _markerRepository.GetByIdAsync(id);
         if (marker == null)
         {
-            throw new KeyNotFoundException($"Marker with ID {id} not found");
+            return Result<MarkerDto>.NotFound($"Marker with ID {id} not found");
         }
 
-        return _mapper.Map<MarkerDto>(marker);
+        var markerDto = _mapper.Map<MarkerDto>(marker);
+        return Result<MarkerDto>.Success(markerDto);
     }
 
-    public async Task<MarkerDto> CreateMarkerAsync(CreateMarkerRequest request, string userId)
+    public async Task<Result<MarkerDto>> CreateMarkerAsync(CreateMarkerRequest request, string userId)
     {
         var marker = _mapper.Map<Marker>(request);
         marker.Id = Guid.NewGuid();
@@ -101,22 +105,23 @@ public class MarkerService : IMarkerService
         marker.Location = geometryFactory.CreatePoint(new Coordinate(request.Longitude, request.Latitude));
 
         var createdMarker = await _markerRepository.CreateAsync(marker);
-        return _mapper.Map<MarkerDto>(createdMarker);
+        var markerDto = _mapper.Map<MarkerDto>(createdMarker);
+        return Result<MarkerDto>.Success(markerDto);
     }
 
-    public async Task<MarkerDto> UpdateMarkerAsync(Guid id, UpdateMarkerRequest request, string userId)
+    public async Task<Result<MarkerDto>> UpdateMarkerAsync(Guid id, UpdateMarkerRequest request, string userId)
     {
         var marker = await _markerRepository.GetByIdAsync(id);
         if (marker == null)
         {
-            throw new KeyNotFoundException($"Marker with ID {id} not found");
+            return Result<MarkerDto>.NotFound($"Marker with ID {id} not found");
         }
 
         // Authorization check
         bool isAdmin = _currentUserService.IsInRole("Admin");
         if (marker.CreatedById != userId && !isAdmin)
         {
-            throw new UnauthorizedAccessException("You can only edit your own markers");
+            return Result<MarkerDto>.Forbidden("You can only edit your own markers");
         }
 
         // Update properties
@@ -133,25 +138,27 @@ public class MarkerService : IMarkerService
         marker.Location = geometryFactory.CreatePoint(new Coordinate(request.Longitude, request.Latitude));
 
         var updatedMarker = await _markerRepository.UpdateAsync(marker);
-        return _mapper.Map<MarkerDto>(updatedMarker);
+        var markerDto = _mapper.Map<MarkerDto>(updatedMarker);
+        return Result<MarkerDto>.Success(markerDto);
     }
 
-    public async Task DeleteMarkerAsync(Guid id, string userId)
+    public async Task<Result> DeleteMarkerAsync(Guid id, string userId)
     {
         var marker = await _markerRepository.GetByIdAsync(id);
         if (marker == null)
         {
-            throw new KeyNotFoundException($"Marker with ID {id} not found");
+            return Result.NotFound($"Marker with ID {id} not found");
         }
 
         // Authorization check
         bool isAdmin = _currentUserService.IsInRole("Admin");
         if (marker.CreatedById != userId && !isAdmin)
         {
-            throw new UnauthorizedAccessException("You can only delete your own markers");
+            return Result.Forbidden("You can only delete your own markers");
         }
 
         await _markerRepository.DeleteAsync(id);
+        return Result.Success();
     }
 
     public async Task<bool> CanUserModifyMarkerAsync(Guid markerId, string userId, bool isAdmin)

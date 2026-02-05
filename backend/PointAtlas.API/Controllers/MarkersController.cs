@@ -39,21 +39,26 @@ public class MarkersController : ControllerBase
             pageSize);
 
         var result = await _markerService.GetMarkersAsync(filters);
-        return Ok(result);
+
+        if (result.IsFailure)
+        {
+            return StatusCode(result.StatusCode, new { message = result.Error });
+        }
+
+        return Ok(result.Value);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<MarkerDto>> GetMarker(Guid id)
     {
-        try
+        var result = await _markerService.GetMarkerByIdAsync(id);
+
+        if (result.IsFailure)
         {
-            var marker = await _markerService.GetMarkerByIdAsync(id);
-            return Ok(marker);
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpPost]
@@ -66,8 +71,14 @@ public class MarkersController : ControllerBase
             return Unauthorized();
         }
 
-        var marker = await _markerService.CreateMarkerAsync(request, userId);
-        return CreatedAtAction(nameof(GetMarker), new { id = marker.Id }, marker);
+        var result = await _markerService.CreateMarkerAsync(request, userId);
+
+        if (result.IsFailure)
+        {
+            return StatusCode(result.StatusCode, new { message = result.Error });
+        }
+
+        return CreatedAtAction(nameof(GetMarker), new { id = result.Value!.Id }, result.Value);
     }
 
     [HttpPut("{id}")]
@@ -80,19 +91,14 @@ public class MarkersController : ControllerBase
             return Unauthorized();
         }
 
-        try
+        var result = await _markerService.UpdateMarkerAsync(id, request, userId);
+
+        if (result.IsFailure)
         {
-            var marker = await _markerService.UpdateMarkerAsync(id, request, userId);
-            return Ok(marker);
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid();
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpDelete("{id}")]
@@ -105,18 +111,13 @@ public class MarkersController : ControllerBase
             return Unauthorized();
         }
 
-        try
+        var result = await _markerService.DeleteMarkerAsync(id, userId);
+
+        if (result.IsFailure)
         {
-            await _markerService.DeleteMarkerAsync(id, userId);
-            return NoContent();
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid();
-        }
+
+        return NoContent();
     }
 }

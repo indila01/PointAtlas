@@ -1,12 +1,13 @@
+using PointAtlas.Application.Common;
 using PointAtlas.Application.DTOs;
 
 namespace PointAtlas.Application.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto> RegisterAsync(RegisterRequest request);
-    Task<AuthResponseDto> LoginAsync(LoginRequest request);
-    Task<AuthResponseDto> RefreshTokenAsync(string refreshToken);
-    Task LogoutAsync(string userId);
-    Task<UserDto> GetCurrentUserAsync(string userId);
+    Task<Result<AuthResponseDto>> RegisterAsync(RegisterRequest request);
+    Task<Result<AuthResponseDto>> LoginAsync(LoginRequest request);
+    Task<Result<AuthResponseDto>> RefreshTokenAsync(string refreshToken);
+    Task<Result> LogoutAsync(string userId);
+    Task<Result<UserDto>> GetCurrentUserAsync(string userId);
 }

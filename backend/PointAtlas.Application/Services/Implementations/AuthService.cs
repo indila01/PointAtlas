@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using PointAtlas.Application.Common;
 using PointAtlas.Application.DTOs;
 using PointAtlas.Application.Services.Interfaces;
 using PointAtlas.Core.Entities;
@@ -22,12 +23,12 @@ public class AuthService : IAuthService
         _refreshTokenRepository = refreshTokenRepository;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterRequest request)
+    public async Task<Result<AuthResponseDto>> RegisterAsync(RegisterRequest request)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            throw new InvalidOperationException("User with this email already exists");
+            return Result<AuthResponseDto>.Conflict("User with this email already exists");
         }
 
         var user = new ApplicationUser
@@ -42,39 +43,41 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to create user: {errors}");
+            return Result<AuthResponseDto>.Failure($"Failed to create user: {errors}");
         }
 
         // Assign default "User" role
         await _userManager.AddToRoleAsync(user, "User");
 
-        return await GenerateAuthResponse(user);
+        var authResponse = await GenerateAuthResponse(user);
+        return Result<AuthResponseDto>.Success(authResponse);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginRequest request)
+    public async Task<Result<AuthResponseDto>> LoginAsync(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
-            throw new UnauthorizedAccessException("Invalid email or password");
+            return Result<AuthResponseDto>.Unauthorized("Invalid email or password");
         }
 
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!isPasswordValid)
         {
-            throw new UnauthorizedAccessException("Invalid email or password");
+            return Result<AuthResponseDto>.Unauthorized("Invalid email or password");
         }
 
-        return await GenerateAuthResponse(user);
+        var authResponse = await GenerateAuthResponse(user);
+        return Result<AuthResponseDto>.Success(authResponse);
     }
 
-    public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
+    public async Task<Result<AuthResponseDto>> RefreshTokenAsync(string refreshToken)
     {
         var token = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
         if (token == null || token.ExpiresAt < DateTime.UtcNow)
         {
-            throw new UnauthorizedAccessException("Invalid or expired refresh token");
+            return Result<AuthResponseDto>.Unauthorized("Invalid or expired refresh token");
         }
 
         // Revoke old refresh token
@@ -82,24 +85,27 @@ public class AuthService : IAuthService
         token.RevokedAt = DateTime.UtcNow;
         await _refreshTokenRepository.UpdateAsync(token);
 
-        return await GenerateAuthResponse(token.User);
+        var authResponse = await GenerateAuthResponse(token.User);
+        return Result<AuthResponseDto>.Success(authResponse);
     }
 
-    public async Task LogoutAsync(string userId)
+    public async Task<Result> LogoutAsync(string userId)
     {
         await _refreshTokenRepository.RevokeAllUserTokensAsync(userId);
+        return Result.Success();
     }
 
-    public async Task<UserDto> GetCurrentUserAsync(string userId)
+    public async Task<Result<UserDto>> GetCurrentUserAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("User not found");
+            return Result<UserDto>.NotFound("User not found");
         }
 
         var roles = await _userManager.GetRolesAsync(user);
-        return new UserDto(user.Id, user.Email ?? string.Empty, user.DisplayName, roles);
+        var userDto = new UserDto(user.Id, user.Email ?? string.Empty, user.DisplayName, roles);
+        return Result<UserDto>.Success(userDto);
     }
 
     private async Task<AuthResponseDto> GenerateAuthResponse(ApplicationUser user)

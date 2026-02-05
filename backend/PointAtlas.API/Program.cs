@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PointAtlas.API.Middleware;
 using PointAtlas.Application.Mappings;
 using PointAtlas.Application.Services.Implementations;
 using PointAtlas.Application.Services.Interfaces;
 using PointAtlas.Application.Validators;
 using PointAtlas.Core.Entities;
 using PointAtlas.Core.Interfaces;
+using PointAtlas.Infrastructure.Configuration;
 using PointAtlas.Infrastructure.Data;
 using PointAtlas.Infrastructure.Data.Extensions;
 using PointAtlas.Infrastructure.Repositories;
@@ -20,6 +22,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Enable dynamic JSON for Npgsql (required for Dictionary<string, object> properties)
 Npgsql.NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
+
+// Configure Options Pattern with validation
+builder.Services.AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Configure PostgreSQL with PostGIS
 builder.Services.AddDbContext<PointAtlasDbContext>(options =>
@@ -43,10 +51,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<PointAtlasDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
-var key = Encoding.UTF8.GetBytes(jwtSecret);
-
+// Configure JWT Authentication using Options Pattern
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -54,14 +59,19 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+        ?? throw new InvalidOperationException("JWT configuration is missing");
+
+    var key = Encoding.UTF8.GetBytes(jwtOptions.Secret);
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidIssuer = jwtOptions.Issuer,
         ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidAudience = jwtOptions.Audience,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
@@ -145,6 +155,9 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// Add Global Exception Handler Middleware (must be early in pipeline)
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

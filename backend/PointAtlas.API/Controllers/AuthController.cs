@@ -20,43 +20,40 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequest request)
     {
-        try
+        var result = await _authService.RegisterAsync(request);
+
+        if (result.IsFailure)
         {
-            var response = await _authService.RegisterAsync(request);
-            return Ok(response);
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequest request)
     {
-        try
+        var result = await _authService.LoginAsync(request);
+
+        if (result.IsFailure)
         {
-            var response = await _authService.LoginAsync(request);
-            return Ok(response);
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponseDto>> RefreshToken([FromBody] RefreshTokenRequest request)
     {
-        try
+        var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+
+        if (result.IsFailure)
         {
-            var response = await _authService.RefreshTokenAsync(request.RefreshToken);
-            return Ok(response);
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpPost("logout")]
@@ -69,7 +66,13 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        await _authService.LogoutAsync(userId);
+        var result = await _authService.LogoutAsync(userId);
+
+        if (result.IsFailure)
+        {
+            return StatusCode(result.StatusCode, new { message = result.Error });
+        }
+
         return Ok(new { message = "Logged out successfully" });
     }
 
@@ -83,14 +86,13 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        try
+        var result = await _authService.GetCurrentUserAsync(userId);
+
+        if (result.IsFailure)
         {
-            var user = await _authService.GetCurrentUserAsync(userId);
-            return Ok(user);
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+
+        return Ok(result.Value);
     }
 }
