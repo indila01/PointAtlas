@@ -13,7 +13,28 @@ public static class DbSeeder
         RoleManager<IdentityRole> roleManager)
     {
         // Apply pending migrations
+        Console.WriteLine("Starting database migration...");
+
+        // Check if database can be connected
+        var canConnect = await context.Database.CanConnectAsync();
+        Console.WriteLine($"Can connect to database: {canConnect}");
+
+        if (!canConnect)
+        {
+            throw new InvalidOperationException("Cannot connect to database");
+        }
+
+        // Get pending migrations
+        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+        Console.WriteLine($"Pending migrations count: {pendingMigrations.Count()}");
+
         await context.Database.MigrateAsync();
+        Console.WriteLine("Migration completed");
+
+        // Verify tables exist
+        var tableExists = await context.Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM information_schema.tables WHERE table_name = 'AspNetRoles' LIMIT 1");
+        Console.WriteLine($"AspNetRoles table check result: {tableExists}");
 
         // Seed roles
         await SeedRolesAsync(roleManager);
