@@ -10,23 +10,32 @@ const HomePage = () => {
   const { fetchMarkers, markers, loading, updateFilters, filters } = useMarkers();
   const [showMarkerForm, setShowMarkerForm] = useState(false);
   const [clickedPosition, setClickedPosition] = useState(null);
+  const [editingMarker, setEditingMarker] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     fetchMarkers();
-  }, [filters]);
+  }, [fetchMarkers]);
 
   const handleMapClick = (e) => {
     if (e.latlng) {
       setClickedPosition(e.latlng);
+      setEditingMarker(null);
       setShowMarkerForm(true);
     }
+  };
+
+  const handleEditMarker = (marker) => {
+    setEditingMarker(marker);
+    setClickedPosition(null);
+    setShowMarkerForm(true);
   };
 
   const handleMarkerCreated = () => {
     setShowMarkerForm(false);
     setClickedPosition(null);
+    setEditingMarker(null);
     fetchMarkers();
   };
 
@@ -94,12 +103,16 @@ const HomePage = () => {
             <div className="loading-spinner">Loading markers...</div>
           </div>
         )}
-        <Map onMapClick={handleMapClick} />
+        <Map onMapClick={handleMapClick} onEditMarker={handleEditMarker} />
       </div>
 
       <button
         className="btn-add-marker"
-        onClick={() => setShowMarkerForm(true)}
+        onClick={() => {
+          setEditingMarker(null);
+          setClickedPosition(null);
+          setShowMarkerForm(true);
+        }}
         title="Click map to add marker at location, or click this button"
       >
         + Add Marker
@@ -107,11 +120,13 @@ const HomePage = () => {
 
       {showMarkerForm && (
         <MarkerForm
+          marker={editingMarker}
           initialPosition={clickedPosition}
           onSuccess={handleMarkerCreated}
           onCancel={() => {
             setShowMarkerForm(false);
             setClickedPosition(null);
+            setEditingMarker(null);
           }}
         />
       )}

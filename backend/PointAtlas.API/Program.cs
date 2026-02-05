@@ -12,10 +12,14 @@ using PointAtlas.Application.Validators;
 using PointAtlas.Core.Entities;
 using PointAtlas.Core.Interfaces;
 using PointAtlas.Infrastructure.Data;
+using PointAtlas.Infrastructure.Data.Extensions;
 using PointAtlas.Infrastructure.Repositories;
 using PointAtlas.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Enable dynamic JSON for Npgsql (required for Dictionary<string, object> properties)
+Npgsql.NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 
 // Configure PostgreSQL with PostGIS
 builder.Services.AddDbContext<PointAtlasDbContext>(options =>
@@ -157,62 +161,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Seed database on startup
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<PointAtlasDbContext>();
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-
-        // Apply pending migrations
-        await context.Database.MigrateAsync();
-
-        // Seed roles and admin user
-        await SeedDataAsync(userManager, roleManager);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or seeding the database");
-    }
-}
+await app.SeedDatabaseAsync();
 
 app.Run();
-
-static async Task SeedDataAsync(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
-{
-    // Seed roles
-    if (!await roleManager.RoleExistsAsync("Admin"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-    }
-
-    if (!await roleManager.RoleExistsAsync("User"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("User"));
-    }
-
-    // Seed admin user
-    var adminEmail = "admin@pointatlas.com";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-    if (adminUser == null)
-    {
-        adminUser = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            DisplayName = "Administrator",
-            EmailConfirmed = true,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var result = await userManager.CreateAsync(adminUser, "Admin@123456");
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(adminUser, "Admin");
-        }
-    }
-}

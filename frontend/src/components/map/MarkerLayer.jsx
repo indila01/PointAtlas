@@ -1,14 +1,36 @@
+import { useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { useMarkers } from '../../contexts/MarkerContext';
 import { useAuth } from '../../contexts/AuthContext';
 
-const MarkerLayer = () => {
-  const { markers } = useMarkers();
+const MarkerLayer = ({ onEditMarker }) => {
+  const { markers, deleteMarker } = useMarkers();
   const { user, isAdmin } = useAuth();
+  const [deletingId, setDeletingId] = useState(null);
 
   const canEdit = (marker) => {
     if (!user) return false;
     return marker.createdById === user.id || isAdmin();
+  };
+
+  const handleDelete = async (marker) => {
+    if (window.confirm(`Are you sure you want to delete "${marker.title}"?`)) {
+      try {
+        setDeletingId(marker.id);
+        await deleteMarker(marker.id);
+        alert('Marker deleted successfully!');
+      } catch (error) {
+        alert(error.message || 'Failed to delete marker');
+      } finally {
+        setDeletingId(null);
+      }
+    }
+  };
+
+  const handleEdit = (marker) => {
+    if (onEditMarker) {
+      onEditMarker(marker);
+    }
   };
 
   return (
@@ -32,21 +54,17 @@ const MarkerLayer = () => {
                 <div className="marker-actions">
                   <button
                     className="btn-sm btn-edit"
-                    onClick={() => {
-                      // Will implement edit functionality
-                      console.log('Edit marker:', marker.id);
-                    }}
+                    onClick={() => handleEdit(marker)}
+                    disabled={deletingId === marker.id}
                   >
                     Edit
                   </button>
                   <button
                     className="btn-sm btn-delete"
-                    onClick={() => {
-                      // Will implement delete functionality
-                      console.log('Delete marker:', marker.id);
-                    }}
+                    onClick={() => handleDelete(marker)}
+                    disabled={deletingId === marker.id}
                   >
-                    Delete
+                    {deletingId === marker.id ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
               )}

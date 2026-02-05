@@ -71,18 +71,18 @@ export const MarkerProvider = ({ children }) => {
     }
   };
 
-  const updateFilters = (newFilters) => {
+  const updateFilters = useCallback((newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
+  }, []);
 
-  const updateBounds = (bounds) => {
+  const updateBounds = useCallback((bounds) => {
     updateFilters({
       minLatitude: bounds.minLat,
       maxLatitude: bounds.maxLat,
       minLongitude: bounds.minLng,
       maxLongitude: bounds.maxLng,
     });
-  };
+  }, [updateFilters]);
 
   const value = {
     markers,

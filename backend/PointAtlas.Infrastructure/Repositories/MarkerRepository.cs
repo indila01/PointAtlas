@@ -70,22 +70,13 @@ public class MarkerRepository : IMarkerRepository
     public async Task<IEnumerable<Marker>> GetMarkersInBoundsAsync(
         double minLat, double maxLat, double minLng, double maxLng)
     {
-        var geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
-
-        // Create a bounding box polygon
-        var coordinates = new[]
-        {
-            new Coordinate(minLng, minLat),
-            new Coordinate(maxLng, minLat),
-            new Coordinate(maxLng, maxLat),
-            new Coordinate(minLng, maxLat),
-            new Coordinate(minLng, minLat)
-        };
-
-        var boundingBox = geometryFactory.CreatePolygon(coordinates);
-
+        // Use coordinate range checks instead of ST_Contains for geography compatibility
+        // This is more efficient and works with both geometry and geography types
         return await _context.Markers
-            .Where(m => boundingBox.Contains(m.Location))
+            .Where(m => m.Latitude >= minLat
+                     && m.Latitude <= maxLat
+                     && m.Longitude >= minLng
+                     && m.Longitude <= maxLng)
             .Include(m => m.CreatedBy)
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();

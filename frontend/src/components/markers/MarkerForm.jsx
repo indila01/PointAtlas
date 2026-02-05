@@ -1,19 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMarkers } from '../../contexts/MarkerContext';
 import './Markers.css';
 
-const MarkerForm = ({ initialPosition, onSuccess, onCancel }) => {
+const MarkerForm = ({ marker, initialPosition, onSuccess, onCancel }) => {
+  const isEditing = !!marker;
+
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    latitude: initialPosition?.lat || '',
-    longitude: initialPosition?.lng || '',
-    category: '',
+    title: marker?.title || '',
+    description: marker?.description || '',
+    latitude: marker?.latitude || initialPosition?.lat || '',
+    longitude: marker?.longitude || initialPosition?.lng || '',
+    category: marker?.category || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { createMarker } = useMarkers();
+  const { createMarker, updateMarker } = useMarkers();
+
+  useEffect(() => {
+    if (marker) {
+      setFormData({
+        title: marker.title,
+        description: marker.description || '',
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        category: marker.category,
+      });
+    }
+  }, [marker]);
 
   const handleChange = (e) => {
     setFormData({
@@ -28,18 +42,24 @@ const MarkerForm = ({ initialPosition, onSuccess, onCancel }) => {
     setLoading(true);
 
     try {
-      await createMarker({
+      const markerData = {
         title: formData.title,
         description: formData.description || null,
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
         category: formData.category,
-        properties: {},
-      });
+        properties: marker?.properties || {},
+      };
+
+      if (isEditing) {
+        await updateMarker(marker.id, markerData);
+      } else {
+        await createMarker(markerData);
+      }
 
       onSuccess && onSuccess();
     } catch (err) {
-      setError(err.message || 'Failed to create marker');
+      setError(err.message || `Failed to ${isEditing ? 'update' : 'create'} marker`);
     } finally {
       setLoading(false);
     }
@@ -48,7 +68,7 @@ const MarkerForm = ({ initialPosition, onSuccess, onCancel }) => {
   return (
     <div className="marker-form-overlay">
       <div className="marker-form">
-        <h2>Add New Marker</h2>
+        <h2>{isEditing ? 'Edit Marker' : 'Add New Marker'}</h2>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -139,7 +159,9 @@ const MarkerForm = ({ initialPosition, onSuccess, onCancel }) => {
               Cancel
             </button>
             <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Creating...' : 'Create Marker'}
+              {loading
+                ? (isEditing ? 'Updating...' : 'Creating...')
+                : (isEditing ? 'Update Marker' : 'Create Marker')}
             </button>
           </div>
         </form>

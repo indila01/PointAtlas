@@ -19,7 +19,7 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const BoundsUpdater = () => {
+const MapEventHandler = ({ onMapClick }) => {
   const { updateBounds } = useMarkers();
   const map = useMap();
 
@@ -32,6 +32,11 @@ const BoundsUpdater = () => {
         minLng: bounds.getWest(),
         maxLng: bounds.getEast(),
       });
+    },
+    click: (e) => {
+      if (onMapClick) {
+        onMapClick(e);
+      }
     },
   });
 
@@ -49,7 +54,7 @@ const BoundsUpdater = () => {
   return null;
 };
 
-const Map = ({ onMapClick }) => {
+const Map = ({ onMapClick, onEditMarker }) => {
   const defaultCenter = [40.7128, -74.006]; // New York City
   const defaultZoom = 13;
 
@@ -59,14 +64,13 @@ const Map = ({ onMapClick }) => {
         center={defaultCenter}
         zoom={defaultZoom}
         style={{ height: '100%', width: '100%' }}
-        onClick={onMapClick}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <BoundsUpdater />
-        <MarkerLayer />
+        <MapEventHandler onMapClick={onMapClick} />
+        <MarkerLayer onEditMarker={onEditMarker} />
       </MapContainer>
     </div>
   );
