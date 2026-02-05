@@ -1,0 +1,24 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+WORKDIR /app
+
+# Install dotnet-ef tools
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+# Copy solution and project files
+COPY PointAtlas.sln ./
+COPY PointAtlas.API/PointAtlas.API.csproj PointAtlas.API/
+COPY PointAtlas.Application/PointAtlas.Application.csproj PointAtlas.Application/
+COPY PointAtlas.Core/PointAtlas.Core.csproj PointAtlas.Core/
+COPY PointAtlas.Infrastructure/PointAtlas.Infrastructure.csproj PointAtlas.Infrastructure/
+
+# Restore dependencies
+RUN dotnet restore
+
+# Copy source code
+COPY . .
+
+EXPOSE 80
+
+# Use dotnet watch for hot reload
+CMD ["dotnet", "watch", "run", "--project", "PointAtlas.API/PointAtlas.API.csproj", "--no-launch-profile"]
