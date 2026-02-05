@@ -26,15 +26,39 @@ public static class DbSeeder
 
         // Get pending migrations
         var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
         Console.WriteLine($"Pending migrations count: {pendingMigrations.Count()}");
+        Console.WriteLine($"Applied migrations count: {appliedMigrations.Count()}");
 
-        await context.Database.MigrateAsync();
-        Console.WriteLine("Migration completed");
+        // Check if AspNetRoles table actually exists
+        bool tablesExist = false;
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetRoles\" LIMIT 1");
+            tablesExist = true;
+            Console.WriteLine("AspNetRoles table EXISTS");
+        }
+        catch
+        {
+            Console.WriteLine("AspNetRoles table DOES NOT EXIST - will recreate database");
+        }
 
-        // Verify tables exist
-        var tableExists = await context.Database.ExecuteSqlRawAsync(
-            "SELECT 1 FROM information_schema.tables WHERE table_name = 'AspNetRoles' LIMIT 1");
-        Console.WriteLine($"AspNetRoles table check result: {tableExists}");
+        // If migrations are marked as applied but tables don't exist, we need to recreate
+        if (appliedMigrations.Any() && !tablesExist)
+        {
+            Console.WriteLine("CORRUPTED STATE DETECTED: Migrations marked as applied but tables missing");
+            Console.WriteLine("Deleting database and recreating...");
+
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.MigrateAsync();
+
+            Console.WriteLine("Database recreated successfully");
+        }
+        else
+        {
+            await context.Database.MigrateAsync();
+            Console.WriteLine("Migration completed");
+        }
 
         // Seed roles
         await SeedRolesAsync(roleManager);
